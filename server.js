@@ -1,41 +1,46 @@
 const express = require('express');
 const noblox = require('noblox.js');
 const app = express();
-const PORT = 3000;
+
+const PORT = process.env.PORT || 3000;
 
 const GROUP_ID = 35737951;
-const ROBLOX_COOKIE = "_|WARNING:-DO-NOT-SHARE-THIS.--Sharing-this-will-allow-someone-to-log-in-as-you-and-to-steal-your-ROBUX-and-items.|_BE5DD6CABB0E6C2D317AB5B32EF66E6246E3C3ADBED94DD6D5E70A1DEC0645881F8E9AF97DED1D15D689B4EFFF5A6C12E97E2816AFB4EEDBF8625DCB956B05ECA5AD292927982FC05E24284D7B3171B54731B907F7D9A5C815FCB1C9654A0056DE51F891166A5DE797A1EDBA4C33FDE4E925DDA2C824836FDF6C484A1DD2D8829A0F911E0D953748D45832ED76242E40C55E3AFAF340D0E5AAC4CEF2D6EF7F7EAB9AD9BF7C4A4D57D627FE18AE2B4CCC62EF6657DDDDD4E129C683B019CFC77FB4C6ADE42BC8BBFF41BB5AC979B9E16E08322A92BFF209482350F92E936963514EB6C36660738F329796DAFA3D8F7FC324C69D852EAE541053B9F0EC7AFB107FD561A1270BA4A65CAC8259F1E374626632FA710CB173E6D870448C2BB9113BBE5E9EC45DCBFD770F8423CEC88A9E5606378B76DC415A930A5D2399D7DC72B28DADAA3B476B98ADF50F62E4C00AF015290517F15FA93B7F9F73A1870B894023BFC0B49296537D1CFB21944A06452E00B0BF21137B76F95746AA0AFCBBEC8C989A20C43EF1B6499AFD549638F6FB147E497F711A2CCB7F4A1B99B7AC2C8C1DB6D47774CB699737566884FC55DF62D96AD5EB7750B0C08683357A88CCA93B1E2885F41733A621BEC3A245976F17BEB2F8C7B999900A4AB8C7D9DF771063854C34537C3D2F03DB298F37382C144F4C9D3E8DA84400D84ECC262520DE23D1899D7CB272AA6B5C2F822AD3EF56E3708F4DEBD18B867AA3D41C189AFA2E10205018CA5C3B7E9F28F547D73F644038C69D55FD5EF1696B9BC24EAC2350F111B110A5FA948F03967FC46B7947106F89A6F76E477E2811824B178296113FB618FB4B290E54A9C74B7F284C3E95E11E0DEB40DE3E7FB456E5C9E09C9E6DE43A94E7785C8ABC027395A66739237F52FA385C89C7C1073B830CA3559EA97517C95A7B8DB193914CF09357C1288B0DF9F9A770D22175A2E0F412EA1FC99C427C0C906D58DFA7D5E231710A7FCE98A323BBD5D37566EAC360D7B0793C674A4B97B0F338E06FE6F288B5C3070BF2B4AA9614C058C027B6CBFA4573150332D9D865E66072B422317FC5E1AD61DF0D0EE8AF21EA593BA359B765EAC8F6"; // Replace with bot cookie
+const ROBLOX_COOKIE = process.env.ROBLOX_COOKIE;
 
 const rankMap = {
-    0: 1,
-    2: 2,
-    5: 3,
-    15: 4,
-    35: 5,
-    40: 6,
-    75: 7,
-    125: 8,
-    175: 9,
-    250: 10,
-    350: 11,
-    500: 12,
-    750: 13,
-    1050: 14
+    0: 1,    // Greenhorn
+    2: 2,    // Tenderfoot
+    5: 3,    // Bronc
+    15: 4,   // Hombre (confirmed ID 4)
+    35: 5,   // Cowpuncher
+    40: 6,   // Ranch Hand
+    75: 7,   // Roper
+    125: 8,  // Wrangler
+    175: 9,  // Rustler
+    250: 10, // Range Rider
+    350: 11, // Trail Boss
+    500: 12, // Buckaroo
+    750: 13, // Saddle Tramp
+    1050: 14 // Lone Star
 };
 
 app.use(express.json());
 
 async function login() {
     try {
+        if (!ROBLOX_COOKIE) {
+            throw new Error("ROBLOX_COOKIE environment variable is not set");
+        }
         await noblox.setCookie(ROBLOX_COOKIE);
         console.log("Successfully logged into Roblox bot account");
     } catch (err) {
-        console.error("Failed to log in:", err);
+        console.error("Failed to log in:", err.message);
     }
 }
 
 app.post('/promote', async (req, res) => {
     const { userId, honor } = req.body;
+    console.log(`Received: userId=${userId}, honor=${honor}`);
 
     if (!userId || !honor) {
         return res.status(400).send("Missing userId or honor");
@@ -49,12 +54,13 @@ app.post('/promote', async (req, res) => {
                 break;
             }
         }
+        console.log(`Mapped honor ${honor} to rankId: ${newRankId}`);
 
         await noblox.setRank(GROUP_ID, userId, newRankId);
         console.log(`Promoted user ${userId} to rank ${newRankId} with ${honor} honor`);
         res.status(200).send("Promotion successful");
     } catch (err) {
-        console.error(`Failed to promote user ${userId}:`, err);
+        console.error(`Failed to promote user ${userId}:`, err.message);
         res.status(500).send("Promotion failed");
     }
 });
